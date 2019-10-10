@@ -9,34 +9,74 @@ NUM_DIGITS = 10
 NUM_VALUES = int(2 ** NUM_DIGITS)
 
 
-def binary_encoding(x, num_digits):
-    # Make digits one-hot encoded
-    pass
+def binary_encoding(x: int, num_digits: int) -> np.array:
+    return np.array([x >> i & 1 for i in range(num_digits)])
 
 
-def fizz_buzz_one_hot(x):
-    # One-hot encode fizz buzz solution
-    pass
+def fizz_buzz_one_hot(x: int) -> np.array:
+    if x % 15 == 0:
+        return np.array([0, 0, 0, 1])
+    if x % 5 == 0:
+        return np.array([0, 0, 1, 0])
+    if x % 3 == 0:
+        return np.array([0, 1, 0, 0])
+
+    return np.array([1, 0, 0, 0])
 
 
 def fizz_buzz(x: int, ind: np.array) -> str:
-    # Output fizz buzz response from one-hot encoded solution
-    pass
+    return [str(x), "fizz", "buzz", "fizzbuzz"][np.argmax(ind)]
 
 
-# Create training and test data
+X, y = np.zeros((NUM_VALUES, NUM_DIGITS)), np.zeros((NUM_VALUES, 4))
 
-# Train (sklearn) neural network classifier
+for i in range(NUM_VALUES):
+    X[i] = binary_encoding(i, NUM_DIGITS)
+    y[i] = fizz_buzz_one_hot(i)
 
-# Output accuracy
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
+    X, y, test_size=0.3
+)
 
-# Output response of the first 100 numbers
+clf = sklearn.neural_network.MLPClassifier(
+    (100,), tol=1e-4, learning_rate="adaptive", max_iter=10000, verbose=True
+).fit(X_train, y_train)
 
+print(f"Accuracy sklearn: {clf.score(X_test, y_test)}")
 
-# Train (Tensorflow/Keras) neural network classifier
+for i in range(100):
+    pred = clf.predict(binary_encoding(i, NUM_DIGITS).reshape(1, -1))
+    print(
+        f"{fizz_buzz(i, fizz_buzz_one_hot(i)):<10} "
+        + f"|| {fizz_buzz(i, pred)}"
+    )
 
-# Compile model
+input()
 
-# Fit to training data
+model = tf.keras.models.Sequential(
+    [
+        tf.keras.layers.Dense(100, activation="relu"),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(30),
+        tf.keras.layers.Dense(4, activation="softmax"),
+    ]
+)
 
-# Output response of the first 100 numbers
+model.compile(
+    optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"]
+)
+
+model.fit(
+    X_train,
+    y_train,
+    epochs=400,
+    batch_size=32,
+    validation_data=(X_test, y_test),
+)
+
+for i in range(100):
+    pred = model.predict(binary_encoding(i, NUM_DIGITS).reshape(1, -1))
+    print(
+        f"{fizz_buzz(i, fizz_buzz_one_hot(i)):<10} "
+        + f"|| {fizz_buzz(i, pred)}"
+    )

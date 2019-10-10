@@ -24,13 +24,13 @@ L = 41
 X, Y = np.meshgrid(np.linspace(0, 1, L), np.linspace(0, 1, L))
 Z = franke(X, Y)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection="3d")
+if __name__ == "__main__":
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
 
-ax.plot_surface(X, Y, Z)
-ax.set_title("Franke's function")
+    ax.plot_surface(X, Y, Z)
+    ax.set_title("Franke's function")
 
-plt.show()
 
 X_d = np.c_[X.ravel()[:, np.newaxis], Y.ravel()[:, np.newaxis]]
 y_d = Z.ravel()[:, np.newaxis]
@@ -39,9 +39,41 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(
     X_d, y_d, test_size=0.2
 )
 
+clf = sklearn.neural_network.MLPRegressor(
+    hidden_layer_sizes=(100, 20),
+    learning_rate="adaptive",
+    learning_rate_init=0.01,
+    max_iter=1000,
+    tol=1e-7,
+    verbose=True,
+).fit(X_train, y_train)
 
-# Implement nueral network
+pred = clf.predict(X_test)
+print(f"MSE = {sklearn.metrics.mean_squared_error(y_test, pred)}")
+print(f"R2 = {clf.score(X_test, y_test)}")
 
-# See some statistics
 
-# Plot surface fit
+if __name__ == "__main__":
+    pred_entire = clf.predict(X_d)
+
+    Z_pred = pred_entire.reshape(L, L)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.plot_surface(X, Y, Z, cmap=cm.coolwarm)
+    ax.plot_wireframe(X, Y, Z_pred)
+    ax.set_title("Franke's function comparison")
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.plot_surface(X, Y, Z_pred, cmap=cm.coolwarm)
+    ax.set_title("Neural Franke")
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    ax.plot_surface(X, Y, np.abs(Z - Z_pred), cmap=cm.coolwarm)
+    ax.set_title("Absolute difference")
+    plt.show()
